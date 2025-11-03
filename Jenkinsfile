@@ -20,28 +20,26 @@ pipeline {
 
     stage('Build Docker Image') {
       steps {
-        sh '''
-          docker build -t ${DOCKER_IMAGE} .
+        bat '''
+          docker build -t local/%APP_NAME%:%IMAGE_TAG% .
         '''
       }
     }
 
     stage('Stop & Remove Old Container (if exists)') {
       steps {
-        sh '''
-          if [ "$(docker ps -aq -f name=${CONTAINER_NAME})" ]; then
-            docker rm -f ${CONTAINER_NAME} || true
-          fi
+        bat '''
+          for /f "tokens=*" %%i in ('docker ps -aq -f "name=%APP_NAME%"') do (
+            docker rm -f %%i || echo "No existing container found"
+          )
         '''
       }
     }
 
     stage('Run New Container') {
       steps {
-        sh '''
-          docker run -d --name ${CONTAINER_NAME} \
-            -p ${HOST_PORT}:80 \
-            ${DOCKER_IMAGE}
+        bat '''
+          docker run -d --name %APP_NAME% -p %HOST_PORT%:80 local/%APP_NAME%:%IMAGE_TAG%
         '''
       }
     }
@@ -53,8 +51,15 @@ pipeline {
           def tries = 10
           def ok = false
           for (int i = 0; i < tries; i++) {
-            def code = sh(returnStatus: true, script: "curl -s -o /dev/null -w '%{http_code}' http://localhost:${HOST_PORT}")
-            if (code == 200) { ok = true; break }
+            def code = bat(
+              script: 'curl -s -o NUL -w "%{http_code}" http://localhost:%HOST_PORT%',
+              returnStdout: true
+            ).trim()
+
+            if (code == "200") {
+              ok = true
+              break
+            }
             sleep 2
           }
           if (!ok) {
@@ -70,8 +75,8 @@ pipeline {
       echo "Deployed: http://localhost:${HOST_PORT}"
     }
     always {
-      sh 'docker images | head -n 15 || true'
-      sh 'docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Ports}}"'
+      bat 'docker images'
+      bat 'docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Ports}}"'
     }
   }
 }
