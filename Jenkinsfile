@@ -3,10 +3,10 @@ pipeline {
 
     environment {
         APP_NAME = 'static-site'
-        IMAGE_TAG = "${env.BUILD_NUMBER}"          // e.g., 15
-        DOCKER_IMAGE = "local/${env.APP_NAME}:${env.IMAGE_TAG}"
-        HOST_PORT = '8081'                          // change if you want a different port
-        CONTAINER_NAME = "${env.APP_NAME}"
+        IMAGE_TAG = "${BUILD_NUMBER}"
+        DOCKER_IMAGE = "local/static-site:${BUILD_NUMBER}"
+        HOST_PORT = '8081'
+        CONTAINER_NAME = 'static-site'
     }
 
     options { timestamps() }
@@ -21,49 +21,53 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 bat '''
-          docker build -t local/%APP_NAME%:%IMAGE_TAG% .
-        '''
+                    echo Building Docker image...
+                    docker build -t local/static-site:%BUILD_NUMBER% .
+                    if %errorlevel% neq 0 exit /b %errorlevel%
+                '''
             }
         }
 
         stage('Stop & Remove Old Container (if exists)') {
             steps {
                 bat '''
-          for /f "tokens=*" %%i in ('docker ps -aq -f "name=%APP_NAME%"') do (
-            docker rm -f %%i || echo "No existing container found"
-          )
-        '''
+                    echo Stopping and removing any existing container...
+                    for /f "tokens=*" %%i in ('docker ps -aq -f "name=static-site"') do (
+                        docker rm -f %%i
+                    )
+                    exit /b 0
+                '''
             }
         }
 
         stage('Run New Container') {
             steps {
                 bat '''
-          docker run -d --name %APP_NAME% -p %HOST_PORT%:80 local/%APP_NAME%:%IMAGE_TAG%
-        '''
+                    echo Running new container...
+                    docker run -d --name static-site -p 8081:80 local/static-site:%BUILD_NUMBER%
+                    if %errorlevel% neq 0 exit /b %errorlevel%
+                '''
             }
         }
 
         stage('Health Check') {
             steps {
                 script {
-                    // Try curl a few times to allow container to start
-                    def tries = 10
                     def ok = false
-                    for (int i = 0; i < tries; i++) {
-                        def code = bat(
-                            script: 'curl -s -o NUL -w "%{http_code}" http://localhost:%HOST_PORT% || exit /b 0',
+                    for (int i = 0; i < 10; i++) {
+                        def output = bat(
+                            script: 'powershell -Command "(Invoke-WebRequest -UseBasicParsing http://localhost:8081).StatusCode" 2>$null',
                             returnStdout: true
                         ).trim()
 
-                        if (code == '200') {
+                        if (output == '200') {
                             ok = true
                             break
                         }
                         sleep 2
                     }
                     if (!ok) {
-                        error "Health check failed: site not responding on http://localhost:${HOST_PORT}"
+                        error "Health check failed: site not responding on http://localhost:8081"
                     }
                 }
             }
@@ -77,6 +81,13 @@ pipeline {
 
             echo '=== Running Containers ==='
             bat(returnStatus: true, script: 'docker ps -a')
+
+            // Explicitly mark build as success if no error() was triggered
+            script {
+                if (currentBuild.result == null || currentBuild.result == 'SUCCESS') {
+                    currentBuild.result = 'SUCCESS'
+                }
+            }
         }
     }
 }
