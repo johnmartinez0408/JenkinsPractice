@@ -54,11 +54,13 @@ pipeline {
             steps {
                 script {
                     def ok = false
-                    for (int i = 0; i < 30; i++) {
+                    for (int i = 0; i < 20; i++) {
                         def output = bat(
-                            script: 'powershell -Command "(Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8081).StatusCode" 2>$null',
-                            returnStdout: true
-                        ).trim()
+                    script: 'powershell -Command "try { (Invoke-WebRequest -UseBasicParsing http://127.0.0.1:8081).StatusCode } catch { $_.Exception.Message }"',
+                    returnStdout: true
+                ).trim()
+
+                        echo "Health check attempt ${i+1}, response: '${output}'"
 
                         if (output == '200') {
                             ok = true
@@ -67,7 +69,7 @@ pipeline {
                         sleep 3
                     }
                     if (!ok) {
-                        error "Health check failed: site not responding on http://127.0.0.1:8081"
+                        error 'Health check failed: site not responding on http://127.0.0.1:8081'
                     }
                 }
             }
