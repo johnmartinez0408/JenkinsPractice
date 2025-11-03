@@ -70,8 +70,8 @@ pipeline {
       echo "Deployed: http://localhost:${HOST_PORT}"
     }
     always {
-      sh 'docker images | head -n 15 || true'
-      sh 'docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Ports}}"'
+    //   sh 'docker images | head -n 15 || true'
+    //   sh 'docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Ports}}"'
     }
   }
 }
