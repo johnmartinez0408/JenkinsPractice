@@ -21,7 +21,7 @@ pipeline {
     stage('Build Docker Image') {
       steps {
         sh '''
-          sudo docker build -t ${DOCKER_IMAGE} .
+          docker build -t ${DOCKER_IMAGE} .
         '''
       }
     }
@@ -30,7 +30,7 @@ pipeline {
       steps {
         sh '''
           if [ "$(docker ps -aq -f name=${CONTAINER_NAME})" ]; then
-            sudo docker rm -f ${CONTAINER_NAME} || true
+            docker rm -f ${CONTAINER_NAME} || true
           fi
         '''
       }
@@ -39,7 +39,7 @@ pipeline {
     stage('Run New Container') {
       steps {
         sh '''
-          sudo docker run -d --name ${CONTAINER_NAME} \
+          docker run -d --name ${CONTAINER_NAME} \
             -p ${HOST_PORT}:80 \
             ${DOCKER_IMAGE}
         '''
