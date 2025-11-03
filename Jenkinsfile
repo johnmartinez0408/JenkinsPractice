@@ -52,9 +52,9 @@ pipeline {
                     def ok = false
                     for (int i = 0; i < tries; i++) {
                         def code = bat(
-              script: 'curl -s -o NUL -w "%{http_code}" http://localhost:%HOST_PORT%',
-              returnStdout: true
-            ).trim()
+                            script: 'curl -s -o NUL -w "%{http_code}" http://localhost:%HOST_PORT% || exit /b 0',
+                            returnStdout: true
+                        ).trim()
 
                         if (code == '200') {
                             ok = true
