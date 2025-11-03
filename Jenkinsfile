@@ -72,13 +72,11 @@ pipeline {
 
     post {
         always {
-            bat '''
-      echo === Docker Images ===
-      docker images || exit /b 0
+            echo '=== Docker Images ==='
+            bat(returnStatus: true, script: 'docker images')
 
-      echo === Running Containers ===
-      docker ps -a || exit /b 0
-    '''
+            echo '=== Running Containers ==='
+            bat(returnStatus: true, script: 'docker ps -a')
         }
     }
 }
