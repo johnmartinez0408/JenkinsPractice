@@ -71,12 +71,12 @@ pipeline {
   }
 
   post {
-    success {
-      echo "Deployed: http://localhost:${HOST_PORT}"
-    }
-    always {
-      bat 'docker images'
-      bat 'docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Ports}}"'
-    }
+  success {
+    echo "✅ Deployed: http://localhost:${HOST_PORT}"
   }
+  always {
+    bat 'docker images || exit /b 0'
+    bat 'docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Ports}}" || exit /b 0'
+  }
+}
 }
