@@ -54,7 +54,7 @@ pipeline {
             steps {
                 script {
                     def ok = false
-                    for (int i = 0; i < 10; i++) {
+                    for (int i = 0; i < 30; i++) {
                         def output = bat(
                             script: 'powershell -Command "(Invoke-WebRequest -UseBasicParsing http://localhost:8081).StatusCode" 2>$null',
                             returnStdout: true
@@ -64,7 +64,7 @@ pipeline {
                             ok = true
                             break
                         }
-                        sleep 2
+                        sleep 3
                     }
                     if (!ok) {
                         error "Health check failed: site not responding on http://localhost:8081"
